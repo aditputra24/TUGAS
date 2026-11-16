@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kalkulator Diskon</title>
+<style>
+:root{--primary:#5145cd;--primary-dark:#3930a3;--bg:#f3f5ff;--ink:#182033;--muted:#64748b;--line:#e2e8f0;--green:#15803d}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;padding:28px 16px;font-family:Arial,sans-serif;color:var(--ink);background:linear-gradient(135deg,#e9eaff,#f7f8ff 55%,#e5f3ff)}
+.wrap{width:100%;max-width:920px;margin:auto}
+header{text-align:center;margin-bottom:22px}
+header .tag{display:inline-block;padding:7px 12px;border-radius:30px;background:#e4e2ff;color:var(--primary-dark);font-size:12px;font-weight:bold}
+h1{margin:12px 0 7px;font-size:clamp(25px,5vw,34px)}
+header p{margin:0;color:var(--muted);font-size:14px}
+.layout{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.card{background:#fff;border:1px solid rgba(226,232,240,.9);border-radius:18px;padding:22px;box-shadow:0 12px 35px rgba(45,55,110,.08)}
+h2{font-size:18px;margin:0 0 18px}
+label{display:block;font-weight:bold;font-size:13px;margin-bottom:8px}
+input{width:100%;padding:13px;border:1px solid #cbd5e1;border-radius:10px;font-size:16px;outline:none}
+input:focus{border-color:var(--primary);box-shadow:0 0 0 3px #5145cd20}
+.presets{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0 18px}
+.preset{padding:9px 5px;border:1px solid #d9dcf5;background:#f8f8ff;color:var(--primary-dark);border-radius:9px;font-size:12px;cursor:pointer}
+.preset:hover{background:#ecebff}
+.actions{display:flex;gap:9px;margin-top:14px}
+button{font:inherit;cursor:pointer}
+.primary,.secondary{border:0;border-radius:10px;padding:12px 15px;font-weight:bold}
+.primary{background:var(--primary);color:white;flex:1}
+.primary:hover{background:var(--primary-dark)}
+.secondary{background:#eef0f7;color:#334155}
+.result{margin-top:20px;background:#f5f6ff;border-radius:13px;padding:16px;display:none}
+.result h3{font-size:15px;margin:0 0 12px}
+.line{display:flex;justify-content:space-between;gap:12px;padding:7px 0;font-size:14px}
+.line span:first-child{color:var(--muted)}
+.total{border-top:1px solid #d8dcf2;margin-top:8px;padding-top:13px;font-weight:bold}
+.total strong{font-size:21px;color:var(--green)}
+.rate{display:inline-block;background:#dcfce7;color:#166534;border-radius:20px;padding:4px 9px;font-size:12px;font-weight:bold}
+.note{font-size:12px;color:var(--muted);line-height:1.6;margin:14px 0 0}
+.history-card{margin-top:18px}
+.history-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.history-head h2{margin:0}
+.history-list{margin-top:14px;display:grid;gap:9px}
+.history-item{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px;border:1px solid var(--line);border-radius:11px;font-size:13px}
+.history-item small{display:block;color:var(--muted);margin-top:4px}
+.empty{color:var(--muted);font-size:13px;text-align:center;padding:18px}
+footer{text-align:center;color:var(--muted);font-size:12px;margin:18px 0}
+@media(max-width:700px){.layout{grid-template-columns:1fr}.card{padding:19px}}
+@media print{
+ body{background:#fff;padding:0}.wrap{max-width:100%}header,.input-card,.history-card,footer,.actions{display:none!important}
+ .layout{display:block}.result{display:block!important;background:#fff;border:1px solid #ddd}
+ .card{box-shadow:none;border:0;padding:0}.result{margin:0}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+ <span class="tag">TOOLS PERHITUNGAN BELANJA</span>
+ <h1>Kalkulator Diskon</h1>
+ <p>Hitung potongan harga dan total pembayaran dengan mudah.</p>
+</header>
+
+<main class="layout">
+ <section class="card input-card">
+  <h2>Masukkan Belanja</h2>
+  <label for="belanja">Total belanja (Rupiah)</label>
+  <input id="belanja" type="number" min="0" step="1" placeholder="Contoh: 120000">
+  <div class="presets" aria-label="Pilihan nominal">
+   <button class="preset" type="button" data-value="40000">Rp40.000</button>
+   <button class="preset" type="button" data-value="75000">Rp75.000</button>
+   <button class="preset" type="button" data-value="150000">Rp150.000</button>
+  </div>
+  <div class="actions">
+   <button class="primary" type="button" id="calculate">Hitung Diskon</button>
+   <button class="secondary" type="button" id="reset">Reset</button>
+  </div>
+  <p class="note">Aturan diskon: minimal Rp100.000 mendapat 10%; Rp50.000 sampai kurang dari Rp100.000 mendapat 5%; di bawah Rp50.000 tidak mendapat diskon.</p>
+ </section>
+
+ <section class="card">
+  <h2>Hasil Perhitungan</h2>
+  <div id="placeholder" class="empty">Masukkan nominal belanja, lalu tekan “Hitung Diskon”.</div>
+  <div class="result" id="result" aria-live="polite">
+   <h3>Ringkasan pembayaran</h3>
+   <div class="line"><span>Total belanja</span><b id="outBelanja">Rp0</b></div>
+   <div class="line"><span>Persentase diskon</span><span class="rate" id="outRate">0%</span></div>
+   <div class="line"><span>Potongan harga</span><b id="outDiskon">Rp0</b></div>
+   <div class="line total"><span>Total yang dibayar</span><strong id="outBayar">Rp0</strong></div>
+   <div class="actions">
+    <button class="primary" type="button" id="print">Cetak Struk</button>
+   </div>
+  </div>
+ </section>
+</main>
+
+<section class="card history-card">
+ <div class="history-head">
+  <h2>Riwayat Perhitungan</h2>
+  <button class="secondary" type="button" id="clearHistory">Hapus Riwayat</button>
+ </div>
+ <div class="history-list" id="history">
+  <div class="empty">Belum ada riwayat perhitungan.</div>
+ </div>
+</section>
+<footer>Program latihan HTML, CSS, dan JavaScript — fungsi hitungDiskon() menggunakan parameter dan return.</footer>
+</div>
+
+<script>
+// Fungsi menerima total belanja dan mengembalikan nilai diskon.
+function hitungDiskon(totalBelanja) {
+ let persentase;
+ if (totalBelanja >= 100000) persentase = 10;
+ else if (totalBelanja >= 50000) persentase = 5;
+ else persentase = 0;
+ return {nilai: totalBelanja * persentase / 100, persentase: persentase};
+}
+const rupiah = angka => "Rp" + angka.toLocaleString("id-ID");
+const input = document.getElementById("belanja");
+const result = document.getElementById("result");
+const placeholder = document.getElementById("placeholder");
+const historyBox = document.getElementById("history");
+let riwayat = [];
+
+function renderHistory(){
+ if(!riwayat.length){
+  historyBox.innerHTML = '<div class="empty">Belum ada riwayat perhitungan.</div>';
+  return;
+ }
+ historyBox.innerHTML = riwayat.map(item =>
+  `<div class="history-item"><div><b>${rupiah(item.belanja)}</b><small>Diskon ${item.persentase}% · ${item.waktu}</small></div><b>${rupiah(item.bayar)}</b></div>`
+ ).join("");
+}
+function hitung(){
+ const raw = input.value;
+ const total = Number(raw);
+ if(raw === "" || !Number.isFinite(total) || total < 0){
+  alert("Masukkan nominal belanja yang valid (nol atau lebih).");
+  input.focus();
+  return;
+ }
+ const info = hitungDiskon(total);
+ const bayar = total - info.nilai;
+ document.getElementById("outBelanja").textContent = rupiah(total);
+ document.getElementById("outRate").textContent = info.persentase + "%";
+ document.getElementById("outDiskon").textContent = rupiah(info.nilai);
+ document.getElementById("outBayar").textContent = rupiah(bayar);
+ placeholder.style.display = "none";
+ result.style.display = "block";
+ riwayat.unshift({
+  belanja: total, persentase: info.persentase, bayar: bayar,
+  waktu: new Date().toLocaleString("id-ID")
+ });
+ riwayat = riwayat.slice(0,10);
+ renderHistory();
+}
+document.getElementById("calculate").addEventListener("click", hitung);
+input.addEventListener("keydown", e => {if(e.key === "Enter") hitung();});
+document.querySelectorAll(".preset").forEach(button => {
+ button.addEventListener("click", () => {input.value = button.dataset.value; hitung();});
+});
+document.getElementById("reset").addEventListener("click", () => {
+ input.value = "";
+ result.style.display = "none";
+ placeholder.style.display = "block";
+ input.focus();
+});
+document.getElementById("clearHistory").addEventListener("click", () => {
+ riwayat = [];
+ renderHistory();
+});
+document.getElementById("print").addEventListener("click", () => window.print());
+</script>
+</body>
+</html>
